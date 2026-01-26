@@ -1,7 +1,7 @@
 # Dockerfile
 # Custom InvenioRDM with shortened DOI format and custom landing page URLs
 
-FROM --platform=linux/amd64 ghcr.io/inveniosoftware/demo-inveniordm/demo-inveniordm:13.0.0-post1
+FROM ghcr.io/inveniosoftware/demo-inveniordm/demo-inveniordm:13.0.0-post1
 
 LABEL maintainer="SciLifeLab Data Centre <serve@scilifelab.se>"
 LABEL description="InvenioRDM with shortened DOI (xxxx-xxxx) and custom landing page URLs"

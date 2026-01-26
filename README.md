@@ -79,7 +79,7 @@ The GitHub Actions workflow:
 
 1. Builds the Docker image on push to `serve-inveniordm/` path
 2. Runs Trivy vulnerability scanner
-3. Executes container tests
+3. Executes tests
 4. Pushes to GHCR on main branch (tagged with timestamp and `latest`)
 
 ## File Structure
@@ -97,4 +97,4 @@ serve-inveniordm/
 
 ## License
 
-MIT.
+MIT
