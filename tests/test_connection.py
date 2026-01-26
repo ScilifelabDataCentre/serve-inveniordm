@@ -1,83 +1,93 @@
-"""Tests for the InvenioRDM custom image."""
+"""Tests for the InvenioRDM custom image.
+
+These tests verify that the Docker image was built correctly by checking
+that custom files are present. InvenioRDM requires external services
+(PostgreSQL, Elasticsearch, Redis) to run, so we only test the image
+contents, not runtime behavior.
+"""
 
 import os
-import time
-import requests
+import pytest
 import docker
 
 
-# Settings
-PORT = 5000  # InvenioRDM default port
-TIMEOUT_CALL = 10  # Request timeout in seconds
-STARTUP_WAIT = 30  # Initial container startup wait
-
-
 client = docker.from_env()
-container = client.containers.run(
-    os.environ["IMAGE_NAME"],
-    ports={
-        f"{PORT}/tcp": PORT,
-    },
-    environment={
-        "INVENIO_SECRET_KEY": "test-secret-key-for-testing-only",
-        "INVENIO_SECURITY_SESSION_COOKIE_SECURE": "false",
-    },
-    detach=True,
-)
-time.sleep(STARTUP_WAIT)
-container.reload()
+IMAGE_NAME = os.environ.get("IMAGE_NAME", "ghcr.io/scilifelabdatacentre/serve-inveniordm:latest")
 
 
-def test_inveniordm_container():
-    """Test that the InvenioRDM container is running."""
-    assert container.status == "running"
+class TestImageContents:
+    """Test that the image contains all required custom files."""
 
+    def test_image_exists(self):
+        """Test that the image was built successfully."""
+        images = client.images.list(name=IMAGE_NAME)
+        assert len(images) >= 1, f"Image {IMAGE_NAME} should exist"
 
-def test_inveniordm_port():
-    """Test that the expected container port is exposed."""
-    assert len(container.ports) >= 1, "At least 1 port should be exposed"
-    assert f"{PORT}/tcp" in container.ports
+    def test_custom_modules_directory_exists(self):
+        """Test that custom modules directory exists."""
+        result = client.containers.run(
+            IMAGE_NAME,
+            command="ls -la /opt/invenio/var/instance/custom_modules/",
+            remove=True,
+            entrypoint="",
+        )
+        output = result.decode("utf-8")
+        assert "custom_datacite_provider.py" in output
 
+    def test_custom_datacite_provider_exists(self):
+        """Test that custom_datacite_provider.py exists and has content."""
+        result = client.containers.run(
+            IMAGE_NAME,
+            command="cat /opt/invenio/var/instance/custom_modules/custom_datacite_provider.py",
+            remove=True,
+            entrypoint="",
+        )
+        output = result.decode("utf-8")
+        assert "CustomDataCitePIDProvider" in output
+        assert "CustomDataCiteClient" in output
 
-def test_custom_modules_exist():
-    """Test that custom modules are present in the container."""
-    exit_code, output = container.exec_run(
-        "ls -la /opt/invenio/var/instance/custom_modules/"
-    )
-    assert exit_code == 0, "Custom modules directory should exist"
-    assert b"custom_datacite_provider.py" in output
+    def test_custom_config_exists(self):
+        """Test that custom_config.py exists and has content."""
+        result = client.containers.run(
+            IMAGE_NAME,
+            command="cat /opt/invenio/var/instance/custom_config.py",
+            remove=True,
+            entrypoint="",
+        )
+        output = result.decode("utf-8")
+        assert "DATACITE_LANDING_PAGE_URL_TEMPLATE" in output
+        assert "RDM_PERSISTENT_IDENTIFIER_PROVIDERS" in output
 
+    def test_invenio_cfg_includes_custom_config(self):
+        """Test that invenio.cfg includes the custom configuration loader."""
+        result = client.containers.run(
+            IMAGE_NAME,
+            command="cat /opt/invenio/var/instance/invenio.cfg",
+            remove=True,
+            entrypoint="",
+        )
+        output = result.decode("utf-8")
+        assert "Custom DOI Format" in output
+        assert "custom_config.py" in output
 
-def test_custom_config_exists():
-    """Test that custom config file is present."""
-    exit_code, output = container.exec_run(
-        "ls -la /opt/invenio/var/instance/custom_config.py"
-    )
-    assert exit_code == 0, "Custom config file should exist"
+    def test_init_file_exists(self):
+        """Test that __init__.py exists in custom_modules."""
+        result = client.containers.run(
+            IMAGE_NAME,
+            command="ls /opt/invenio/var/instance/custom_modules/__init__.py",
+            remove=True,
+            entrypoint="",
+        )
+        output = result.decode("utf-8")
+        assert "__init__.py" in output
 
-
-def test_invenio_cfg_modified():
-    """Test that invenio.cfg includes custom configuration."""
-    exit_code, output = container.exec_run(
-        "cat /opt/invenio/var/instance/invenio.cfg"
-    )
-    assert exit_code == 0
-    assert b"Custom DOI Format" in output, "invenio.cfg should include custom config"
-
-
-def test_shutdown():
-    """Test stopping the container."""
-    container.stop()
-    container.reload()
-    assert container.status == "exited"
-    container.remove()
-
-
-# Private methods
-
-
-def _get_url(container):
-    """Gets the URL of the container."""
-    ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
-    url = f"http://{ip}:{PORT}"
-    return url
+    def test_file_ownership(self):
+        """Test that files are owned by the correct user (UID 1000)."""
+        result = client.containers.run(
+            IMAGE_NAME,
+            command="stat -c '%u' /opt/invenio/var/instance/custom_config.py",
+            remove=True,
+            entrypoint="",
+        )
+        output = result.decode("utf-8").strip()
+        assert output == "1000", f"File should be owned by UID 1000, got {output}"
