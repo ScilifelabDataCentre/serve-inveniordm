@@ -1,0 +1,93 @@
+name: Serve-InvenioRDM workflow
+
+on:
+  push:
+    paths:
+      - "serve-inveniordm/**"
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Manual run'
+        required: false
+        type: boolean
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@main
+
+      - name: 'Build test image'
+        run: |
+          docker build -t ghcr.io/scilifelabdatacentre/serve-inveniordm:latest ./serve-inveniordm
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.7.1
+        with:
+          image-ref: 'ghcr.io/scilifelabdatacentre/serve-inveniordm:latest'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          timeout: '30m0s'
+          exit-code: '0'
+
+      - name: 'Run tests'
+        env:
+          IMAGE_NAME: ghcr.io/scilifelabdatacentre/serve-inveniordm:latest
+        run: |
+          pip install -r ./serve-inveniordm/tests/requirements.txt
+          python3 -m pytest ./serve-inveniordm
+
+  push:
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'scilifelabdatacentre/serve-images'
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    concurrency:
+      group: '${{ github.workflow }}-${{ github.ref }}'
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 'Checkout github action'
+        uses: actions/checkout@main
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/scilifelabdatacentre/serve-inveniordm
+          tags: |
+            type=raw,value={{date 'YYMMDD-HHmm' tz='Europe/Stockholm'}}
+
+      - name: 'Login to GHCR'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Publish image to GHCR
+        uses: docker/build-push-action@v3
+        with:
+          file: ./serve-inveniordm/Dockerfile
+          context: ./serve-inveniordm
+          push: true
+          build-args: version=${{ github.ref_name }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ghcr.io/scilifelabdatacentre/serve-inveniordm:latest
+          labels: ${{ steps.meta.outputs.labels }}
