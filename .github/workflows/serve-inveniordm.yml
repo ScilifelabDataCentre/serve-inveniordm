@@ -6,6 +6,7 @@ on:
       - "Dockerfile"
       - "custom_*.py"
       - "tests/**"
+      - ".github/workflows/serve-inveniordm.yml"
   workflow_dispatch:
     inputs:
       logLevel:
@@ -53,7 +54,7 @@ jobs:
   push:
     if: |
       github.ref == 'refs/heads/main' &&
-      github.repository == 'scilifelabdatacentre/serve-images'
+      github.repository == 'scilifelabdatacentre/serve-inveniordm'
     needs: build_and_test
     runs-on: ubuntu-latest
     concurrency:
