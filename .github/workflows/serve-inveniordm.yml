@@ -3,7 +3,9 @@ name: Serve-InvenioRDM workflow
 on:
   push:
     paths:
-      - "serve-inveniordm/**"
+      - "Dockerfile"
+      - "custom_*.py"
+      - "tests/**"
   workflow_dispatch:
     inputs:
       logLevel:
@@ -30,7 +32,7 @@ jobs:
 
       - name: 'Build test image'
         run: |
-          docker build -t ghcr.io/scilifelabdatacentre/serve-inveniordm:latest ./serve-inveniordm
+          docker build -t ghcr.io/scilifelabdatacentre/serve-inveniordm:latest .
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.7.1
@@ -45,8 +47,8 @@ jobs:
         env:
           IMAGE_NAME: ghcr.io/scilifelabdatacentre/serve-inveniordm:latest
         run: |
-          pip install -r ./serve-inveniordm/tests/requirements.txt
-          python3 -m pytest ./serve-inveniordm
+          pip install -r ./tests/requirements.txt
+          python3 -m pytest .
 
   push:
     if: |
@@ -83,8 +85,8 @@ jobs:
       - name: Publish image to GHCR
         uses: docker/build-push-action@v3
         with:
-          file: ./serve-inveniordm/Dockerfile
-          context: ./serve-inveniordm
+          file: ./Dockerfile
+          context: .
           push: true
           build-args: version=${{ github.ref_name }}
           tags: |
