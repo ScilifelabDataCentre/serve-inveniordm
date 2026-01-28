@@ -4,97 +4,51 @@ Custom InvenioRDM Docker image for SciLifeLab Serve with shortened DOI format an
 
 ## Features
 
-- Shortened DOI format: converts `xxxxx-xxxxx` to `xxxx-xxxx`
+- Shortened DOI format: `xxxxx-xxxxx` → `xxxx-xxxx` using hybrid approach
 - Custom landing page URL templates for DOI resolution
 - Separate URL templates for parent (concept) and version DOIs
 - Extracts app codes from record metadata identifiers (`SERVE:xxx` format)
 
-## DOI Format
+## DOI Shortening
 
-Standard InvenioRDM generates DOIs like:
-```
-10.83812/SCILIFELAB.nfqdb-pwk91
-```
+InvenioRDM generates 10-character IDs (e.g., `nfqdb-pwk91`). This image shortens them to 8 characters using a hybrid approach:
 
-This image shortens them to:
-```
-10.83812/SCILIFELAB.nfqd-pwk9
-```
+- **First 2 chars** from each part are preserved (readability)
+- **Next 2 chars** come from SHA256 hash of full ID (uniqueness)
+
+Example: `nfqdb-pwk91` → `nfa3-pwf2`
+
+This prevents collisions that would occur with simple truncation. See `custom_datacite_provider.py` for detailed documentation.
 
 ## Configuration
 
 Landing page URLs can be configured via environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATACITE_LANDING_PAGE_URL_TEMPLATE` | `https://serve.scilifelab.se/records/{app_code}/{id}` | URL template for version DOIs |
-| `DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT` | `https://serve.scilifelab.se/records/{app_code}` | URL template for concept DOIs |
+| Variable | Default |
+|----------|---------|
+| `DATACITE_LANDING_PAGE_URL_TEMPLATE` | `https://serve.scilifelab.se/records/{app_code}/{id}` |
+| `DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT` | `https://serve.scilifelab.se/records/{app_code}` |
 
-### URL Template Placeholders
-
-- `{id}` - Record ID (shortened to xxxx-xxxx format)
-- `{app_code}` - Extracted from metadata identifiers (SERVE:xxx)
-- `{parent_id}` - Parent record ID for versioning
-- `{doi}` - Full DOI value
-- `{prefix}` - DataCite prefix
+Available placeholders: `{id}`, `{app_code}`, `{parent_id}`, `{doi}`, `{prefix}`
 
 ## Building
 
-Build the image locally:
-
 ```bash
-docker build -t serve-inveniordm ./serve-inveniordm
+docker build --platform linux/amd64 -t serve-inveniordm .
 ```
 
 ## Testing
 
-Run the test suite:
-
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r ./serve-inveniordm/tests/requirements.txt
-
-# Build and test
-docker build -t inveniordm-dev-img ./serve-inveniordm
-IMAGE_NAME=inveniordm-dev-img python3 -m pytest ./serve-inveniordm/
-```
-
-Or use the convenience script:
-
-```bash
-./run_inveniordm.sh
+pip install -r ./tests/requirements.txt
+docker build --platform linux/amd64 -t inveniordm-dev-img .
+IMAGE_NAME=inveniordm-dev-img python3 -m pytest .
 ```
 
 ## Base Image
 
-Built on top of `ghcr.io/inveniosoftware/demo-inveniordm/demo-inveniordm:13.0.0-post1`
-
-## CI/CD
-
-The GitHub Actions workflow:
-
-1. Builds the Docker image on push to `serve-inveniordm/` path
-2. Runs Trivy vulnerability scanner
-3. Executes tests
-4. Pushes to GHCR on main branch (tagged with timestamp and `latest`)
-
-## File Structure
-
-```
-serve-inveniordm/
-├── Dockerfile
-├── custom_datacite_provider.py    # Custom DataCite PID provider
-├── custom_config.py               # Configuration loader
-├── tests/
-│   ├── requirements.txt
-│   └── test_connection.py
-└── README.md
-```
+`ghcr.io/inveniosoftware/demo-inveniordm/demo-inveniordm:13.0.0-post1`
 
 ## License
 
-MIT
+Part of the SciLifeLab Data Centre infrastructure.
