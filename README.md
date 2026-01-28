@@ -51,4 +51,4 @@ IMAGE_NAME=inveniordm-dev-img python3 -m pytest .
 
 ## License
 
-Part of the SciLifeLab Data Centre infrastructure.
+MIT
