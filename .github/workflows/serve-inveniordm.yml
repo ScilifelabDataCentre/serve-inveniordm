@@ -11,6 +11,7 @@ on:
       - "custom_*.py"
       - "tests/**"
       - ".github/workflows/serve-inveniordm.yml"
+  workflow_dispatch:
 
 jobs:
   build_and_test:
