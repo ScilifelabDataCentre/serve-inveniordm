@@ -36,7 +36,7 @@ jobs:
           docker build -t ghcr.io/scilifelabdatacentre/serve-inveniordm:latest .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.7.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'ghcr.io/scilifelabdatacentre/serve-inveniordm:latest'
           format: 'table'
