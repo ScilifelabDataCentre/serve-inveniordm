@@ -18,9 +18,10 @@ on:
         - info
         - warning
         - debug
-      tags:
-        description: 'Manual run'
-        required: false
+      publish:
+        description: 'Publish image to GHCR'
+        required: true
+        default: false
         type: boolean
 
 jobs:
@@ -53,8 +54,12 @@ jobs:
 
   push:
     if: |
-      github.ref == 'refs/heads/main' &&
-      github.repository == 'scilifelabdatacentre/serve-inveniordm'
+      github.repository == 'scilifelabdatacentre/serve-inveniordm' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/develop' ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish == true)
+      )
     needs: build_and_test
     runs-on: ubuntu-latest
     concurrency:
@@ -75,6 +80,8 @@ jobs:
           images: ghcr.io/scilifelabdatacentre/serve-inveniordm
           tags: |
             type=raw,value={{date 'YYMMDD-HHmm' tz='Europe/Stockholm'}}
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: 'Login to GHCR'
         uses: docker/login-action@v1
@@ -90,7 +97,5 @@ jobs:
           context: .
           push: true
           build-args: version=${{ github.ref_name }}
-          tags: |
-            ${{ steps.meta.outputs.tags }}
-            ghcr.io/scilifelabdatacentre/serve-inveniordm:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
