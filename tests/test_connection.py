@@ -67,7 +67,7 @@ class TestImageContents:
             entrypoint="",
         )
         output = result.decode("utf-8")
-        assert "Custom DOI Format" in output
+        assert "Custom Landing Page URLs" in output
         assert "custom_config.py" in output
 
     def test_init_file_exists(self):

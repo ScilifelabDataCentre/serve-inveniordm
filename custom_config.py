@@ -1,9 +1,6 @@
 # custom_config.py
 # -*- coding: utf-8 -*-
-"""Custom configuration for shortened DOI format and landing page URLs.
-
-DOI Format: xxxxx-xxxxx (InvenioRDM) -> xxxx-xxxx (DataCite)
-Example: 10.83812/SCILIFELAB.nfqdb-pwk91 -> 10.83812/SCILIFELAB.nfqd-pwk9
+"""Custom configuration for DataCite landing page URLs.
 
 Landing Page URLs:
 - Parent DOI: https://serve.scilifelab.se/records/{app_code}
@@ -26,7 +23,7 @@ from custom_datacite_provider import CustomDataCitePIDProvider, CustomDataCiteCl
 # ==============================================================================
 # Available placeholders: {id}, {parent_id}, {doi}, {prefix}, {app_code}
 #
-# {id} - Record ID shortened to xxxx-xxxx format
+# {id} - Record ID
 # {app_code} - Extracted from metadata.identifiers (SERVE:xxx)
 # {parent_id} - Parent record ID (for versioning)
 # {doi} - Full DOI value
@@ -34,7 +31,7 @@ from custom_datacite_provider import CustomDataCitePIDProvider, CustomDataCiteCl
 
 DATACITE_LANDING_PAGE_URL_TEMPLATE = os.environ.get(
     "DATACITE_LANDING_PAGE_URL_TEMPLATE",
-    "https://serve.scilifelab.se/records/{app_code}/{id}"
+    "https://serve.scilifelab.se/records/{id}"
 )
 
 DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT = os.environ.get(
@@ -45,7 +42,6 @@ DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT = os.environ.get(
 # ==============================================================================
 # DATACITE PROVIDER REPLACEMENT
 # ==============================================================================
-# Uses CustomDataCiteClient for shortened DOI generation (xxxx-xxxx)
 # Uses CustomDataCitePIDProvider for custom landing page URLs
 
 def _create_custom_provider(serializer=None, label=None, is_parent=False):

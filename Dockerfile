@@ -24,7 +24,7 @@ RUN touch /opt/invenio/var/instance/custom_modules/__init__.py
 # Append configuration to invenio.cfg
 RUN echo '' >> /opt/invenio/var/instance/invenio.cfg && \
     echo '# =============================================' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo '# Custom DOI Format and Landing Page URLs' >> /opt/invenio/var/instance/invenio.cfg && \
+    echo '# Custom Landing Page URLs' >> /opt/invenio/var/instance/invenio.cfg && \
     echo '# =============================================' >> /opt/invenio/var/instance/invenio.cfg && \
     echo 'import sys' >> /opt/invenio/var/instance/invenio.cfg && \
     echo 'sys.path.insert(0, "/opt/invenio/var/instance")' >> /opt/invenio/var/instance/invenio.cfg && \
