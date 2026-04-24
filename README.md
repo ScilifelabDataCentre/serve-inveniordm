@@ -1,54 +1,74 @@
 # serve-inveniordm
 
-Custom InvenioRDM Docker image for SciLifeLab Serve with shortened DOI format and configurable landing page URLs.
+SciLifeLab Serve's [InvenioRDM](https://inveniordm.docs.cern.ch/) instance.
 
-## Features
+Builds a custom Docker image on top of the upstream
+`registry.cern.ch/inveniosoftware/almalinux:1` base image, with SciLifeLab-specific
+customizations (DOI provider, landing-page URLs, theme tweaks).
 
-- Shortened DOI format: `xxxxx-xxxxx` → `xxxx-xxxx` using hybrid approach
-- Custom landing page URL templates for DOI resolution
-- Separate URL templates for parent (concept) and version DOIs
-- Extracts app codes from record metadata identifiers (`SERVE:xxx` format)
+## Customizations
 
-## DOI Shortening
+- **Custom DataCite landing-page URLs** — separate templates for parent
+  (concept) DOIs and version DOIs. App codes are extracted from record
+  metadata identifiers (`SERVE:xxx` format), so a record carrying
+  `SERVE:my-app` resolves to a per-app landing page.
+- **Restricted records** are not published to DataCite (DOIs are hidden on
+  update and skipped on register).
 
-InvenioRDM generates 10-character IDs (e.g., `nfqdb-pwk91`). This image shortens them to 8 characters using a hybrid approach:
+Provider implementation lives in [site/serve/custom_datacite_provider.py](site/serve/custom_datacite_provider.py);
+configuration is in [invenio.cfg](invenio.cfg).
 
-- **First 2 chars** from each part are preserved (readability)
-- **Next 2 chars** come from SHA256 hash of full ID (uniqueness)
+### Configurable URL templates
 
-Example: `nfqdb-pwk91` → `nfa3-pwf2`
-
-This prevents collisions that would occur with simple truncation. See `custom_datacite_provider.py` for detailed documentation.
-
-## Configuration
-
-Landing page URLs can be configured via environment variables:
-
-| Variable | Default |
-|----------|---------|
-| `DATACITE_LANDING_PAGE_URL_TEMPLATE` | `https://serve.scilifelab.se/records/{app_code}/{id}` |
+| Env var | Default |
+|---|---|
+| `DATACITE_LANDING_PAGE_URL_TEMPLATE` | `https://serve.scilifelab.se/records/{id}` |
 | `DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT` | `https://serve.scilifelab.se/records/{app_code}` |
 
-Available placeholders: `{id}`, `{app_code}`, `{parent_id}`, `{doi}`, `{prefix}`
+Available placeholders: `{id}`, `{parent_id}`, `{doi}`, `{prefix}`, `{app_code}`.
 
-## Building
+## Repository layout
+
+Scaffolded with `invenio-cli init rdm -c v13.0` (the InvenioRDM v13 cookiecutter
+template), then pinned to the latest 13.1.x release via [Pipfile](Pipfile).
+Key files:
+
+| Path | Purpose |
+|---|---|
+| `Dockerfile` | Image build instructions (Almalinux 1 + pipenv). |
+| `Pipfile` / `Pipfile.lock` | Pinned Python dependencies (`invenio-app-rdm ~=13.1.0`). |
+| `invenio.cfg` | Flask / InvenioRDM configuration, including SciLifeLab customizations. |
+| `site/` | The `serve-inveniordm-v13` Python package (custom providers, views, etc.). |
+| `app_data/`, `assets/`, `static/`, `templates/`, `translations/` | Invenio instance assets. |
+| `docker/` | uWSGI / NGINX configs baked into the image. |
+
+## Build
 
 ```bash
 docker build --platform linux/amd64 -t serve-inveniordm .
 ```
 
-## Testing
+## CI / publishing
 
-```bash
-pip install -r ./tests/requirements.txt
-docker build --platform linux/amd64 -t inveniordm-dev-img .
-IMAGE_NAME=inveniordm-dev-img python3 -m pytest .
-```
+- `.github/workflows/publish-image.yml` builds and pushes the image to
+  `ghcr.io/scilifelabdatacentre/serve-inveniordm` on every push to `main` /
+  `develop` and on manual dispatch.
+- `.github/workflows/serve-inveniordm.yml` runs a PR-time build + Trivy scan.
 
-## Base Image
+## Deployment
 
-`ghcr.io/inveniosoftware/demo-inveniordm/demo-inveniordm:13.0.0-post1`
+Deployed to the cluster via the
+[`serve-invenio`](https://github.com/ScilifelabDataCentre/serve-invenio) Helm
+chart, which wires this image to PostgreSQL, OpenSearch, Redis and RabbitMQ.
+
+## Upgrading InvenioRDM
+
+Bump `invenio-app-rdm` in [Pipfile](Pipfile), regenerate `Pipfile.lock`
+(`pipenv lock` against Python 3.9), and build a new image. For cross-minor
+upgrades, check the [upstream release notes](https://inveniordm.docs.cern.ch/releases/)
+for required DB/index migrations (typically `invenio alembic upgrade heads`
+and `invenio index init`).
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
