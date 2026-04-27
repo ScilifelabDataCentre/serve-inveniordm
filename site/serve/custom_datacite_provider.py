@@ -108,20 +108,25 @@ class CustomDataCitePIDProvider(DataCitePIDProvider):
     def _build_landing_url(self, record, pid, fallback_url=None):
         """Build the landing page URL.
 
-        Hostname is taken from ``SITE_UI_URL`` (already set per environment by
-        Invenio's standard config), so deployments don't need a separate env
-        var for the landing-page hostname.
+        Base URL comes from ``DATACITE_LANDING_PAGE_BASE_URL`` when set
+        (allows the public-facing hostname to differ from the Invenio
+        internal one), otherwise falls back to ``SITE_UI_URL``.
 
-        - Parent (concept) DOIs   -> ``<SITE_UI_URL>/records/<app_code>``
-        - Version DOIs            -> ``<SITE_UI_URL>/records/<id>``
+        - Parent (concept) DOIs   -> ``<base>/records/<app_code>``
+        - Version DOIs            -> ``<base>/records/<id>``
 
         ``<app_code>`` falls back to the record id when no
         ``scilifelab-serve:xxx`` identifier is present.
         """
-        site_ui_url = (current_app.config.get("SITE_UI_URL") or "").rstrip("/")
-        if not site_ui_url:
+        base_url = (
+            current_app.config.get("DATACITE_LANDING_PAGE_BASE_URL")
+            or current_app.config.get("SITE_UI_URL")
+            or ""
+        ).rstrip("/")
+        if not base_url:
             current_app.logger.warning(
-                "SITE_UI_URL is not configured; using fallback DOI landing URL."
+                "Neither DATACITE_LANDING_PAGE_BASE_URL nor SITE_UI_URL is "
+                "configured; using fallback DOI landing URL."
             )
             return fallback_url
 
@@ -129,9 +134,9 @@ class CustomDataCitePIDProvider(DataCitePIDProvider):
         app_code = info["app_code"] or info["record_id"]
 
         if self.is_parent_provider:
-            url = f"{site_ui_url}/records/{app_code}"
+            url = f"{base_url}/records/{app_code}"
         else:
-            url = f"{site_ui_url}/records/{info['record_id']}"
+            url = f"{base_url}/records/{info['record_id']}"
 
         current_app.logger.info(
             f"Built landing URL: {url} "

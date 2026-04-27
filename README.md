@@ -20,13 +20,14 @@ configuration is in [invenio.cfg](invenio.cfg).
 
 ### Landing page URLs
 
-URLs are derived from `SITE_UI_URL` (set per environment by Invenio's standard
-config), so deployments don't need a separate hostname env var:
+The base URL comes from `DATACITE_LANDING_PAGE_BASE_URL` (set per environment,
+e.g. `https://serve.scilifelab.se`) when present, otherwise falls back to
+`SITE_UI_URL`. Path components are decided in code:
 
 | DOI type | URL shape |
 |---|---|
-| Version | `<SITE_UI_URL>/records/<id>` |
-| Parent (concept) | `<SITE_UI_URL>/records/<app_code>` |
+| Version | `<base>/records/<id>` |
+| Parent (concept) | `<base>/records/<app_code>` |
 
 `<app_code>` falls back to the record id when the record has no
 `scilifelab-serve:xxx` identifier.
