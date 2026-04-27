@@ -106,41 +106,39 @@ class CustomDataCitePIDProvider(DataCitePIDProvider):
         }
 
     def _build_landing_url(self, record, pid, fallback_url=None):
-        """Build the landing page URL from configuration template."""
-        if self.is_parent_provider:
-            template = current_app.config.get(
-                "DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT"
-            )
-        else:
-            template = current_app.config.get("DATACITE_LANDING_PAGE_URL_TEMPLATE")
+        """Build the landing page URL.
 
-        if not template:
-            current_app.logger.debug(
-                f"No URL template configured, using fallback: {fallback_url}"
+        Hostname is taken from ``SITE_UI_URL`` (already set per environment by
+        Invenio's standard config), so deployments don't need a separate env
+        var for the landing-page hostname.
+
+        - Parent (concept) DOIs   -> ``<SITE_UI_URL>/records/<app_code>``
+        - Version DOIs            -> ``<SITE_UI_URL>/records/<id>``
+
+        ``<app_code>`` falls back to the record id when no
+        ``scilifelab-serve:xxx`` identifier is present.
+        """
+        site_ui_url = (current_app.config.get("SITE_UI_URL") or "").rstrip("/")
+        if not site_ui_url:
+            current_app.logger.warning(
+                "SITE_UI_URL is not configured; using fallback DOI landing URL."
             )
             return fallback_url
 
         info = self._extract_record_info(record, pid)
-        app_code = info["app_code"] if info["app_code"] else info["record_id"]
+        app_code = info["app_code"] or info["record_id"]
+
+        if self.is_parent_provider:
+            url = f"{site_ui_url}/records/{app_code}"
+        else:
+            url = f"{site_ui_url}/records/{info['record_id']}"
 
         current_app.logger.info(
-            f"Building landing URL: record_id={info['record_id']}, "
-            f"app_code={app_code}, is_parent={self.is_parent_provider}"
+            f"Built landing URL: {url} "
+            f"(record_id={info['record_id']}, app_code={app_code}, "
+            f"is_parent={self.is_parent_provider})"
         )
-
-        try:
-            url = template.format(
-                id=info["record_id"],
-                parent_id=info["parent_id"],
-                doi=pid.pid_value,
-                prefix=current_app.config.get("DATACITE_PREFIX", ""),
-                app_code=app_code,
-            )
-            current_app.logger.info(f"Built landing URL: {url}")
-            return url
-        except KeyError as e:
-            current_app.logger.error(f"Invalid placeholder in URL template: {e}")
-            return fallback_url
+        return url
 
     def register(self, pid, record, **kwargs):
         """Register a DOI via the DataCite API with custom URL."""

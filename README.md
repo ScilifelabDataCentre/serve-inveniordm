@@ -18,14 +18,18 @@ customizations (DOI provider, landing-page URLs, theme tweaks).
 Provider implementation lives in [site/serve/custom_datacite_provider.py](site/serve/custom_datacite_provider.py);
 configuration is in [invenio.cfg](invenio.cfg).
 
-### Configurable URL templates
+### Landing page URLs
 
-| Env var | Default |
+URLs are derived from `SITE_UI_URL` (set per environment by Invenio's standard
+config), so deployments don't need a separate hostname env var:
+
+| DOI type | URL shape |
 |---|---|
-| `DATACITE_LANDING_PAGE_URL_TEMPLATE` | `https://serve.scilifelab.se/records/{id}` |
-| `DATACITE_LANDING_PAGE_URL_TEMPLATE_PARENT` | `https://serve.scilifelab.se/records/{app_code}` |
+| Version | `<SITE_UI_URL>/records/<id>` |
+| Parent (concept) | `<SITE_UI_URL>/records/<app_code>` |
 
-Available placeholders: `{id}`, `{parent_id}`, `{doi}`, `{prefix}`, `{app_code}`.
+`<app_code>` falls back to the record id when the record has no
+`scilifelab-serve:xxx` identifier.
 
 ## Repository layout
 
