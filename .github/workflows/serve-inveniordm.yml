@@ -8,13 +8,21 @@ on:
       - reopened
     paths:
       - "Dockerfile"
-      - "custom_*.py"
-      - "tests/**"
+      - "Pipfile"
+      - "Pipfile.lock"
+      - "invenio.cfg"
+      - "site/**"
+      - "app_data/**"
+      - "assets/**"
+      - "static/**"
+      - "templates/**"
+      - "translations/**"
+      - "docker/**"
       - ".github/workflows/serve-inveniordm.yml"
   workflow_dispatch:
 
 jobs:
-  build_and_test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,10 +41,3 @@ jobs:
           severity: 'CRITICAL,HIGH'
           timeout: '30m0s'
           exit-code: '0'
-
-      - name: 'Run tests'
-        env:
-          IMAGE_NAME: ghcr.io/scilifelabdatacentre/serve-inveniordm:latest
-        run: |
-          pip install -r ./tests/requirements.txt
-          python3 -m pytest .

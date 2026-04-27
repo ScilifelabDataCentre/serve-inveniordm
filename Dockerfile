@@ -1,38 +1,29 @@
-# Dockerfile
-# Custom InvenioRDM with shortened DOI format and custom landing page URLs
+# Dockerfile that builds a fully functional image of your app.
+#
+# This image installs all Python dependencies for your application. It's based
+# on Almalinux (https://github.com/inveniosoftware/docker-invenio)
+# and includes Pip, Pipenv, Node.js, NPM and some few standard libraries
+# Invenio usually needs.
+#
+# Note: It is important to keep the commands in this file in sync with your
+# bootstrap script located in ./scripts/bootstrap.
 
-FROM ghcr.io/inveniosoftware/demo-inveniordm/demo-inveniordm:13.0.0-post1
+FROM registry.cern.ch/inveniosoftware/almalinux:1
 
-LABEL maintainer="SciLifeLab Data Centre <serve@scilifelab.se>"
-LABEL description="InvenioRDM with shortened DOI (xxxx-xxxx) and custom landing page URLs"
-LABEL org.opencontainers.image.source="https://github.com/scilifelabdatacentre/serve-inveniordm"
+COPY site ./site
+COPY Pipfile Pipfile.lock ./
+RUN pipenv install --deploy --system
 
-USER root
+COPY ./docker/uwsgi/ ${INVENIO_INSTANCE_PATH}
+COPY ./invenio.cfg ${INVENIO_INSTANCE_PATH}
+COPY ./templates/ ${INVENIO_INSTANCE_PATH}/templates/
+COPY ./app_data/ ${INVENIO_INSTANCE_PATH}/app_data/
+COPY ./translations/ ${INVENIO_INSTANCE_PATH}/translations/
+COPY ./ .
 
-# Create custom modules directory
-RUN mkdir -p /opt/invenio/var/instance/custom_modules
+RUN cp -r ./static/. ${INVENIO_INSTANCE_PATH}/static/ && \
+    cp -r ./assets/. ${INVENIO_INSTANCE_PATH}/assets/ && \
+    invenio collect --verbose  && \
+    invenio webpack buildall
 
-# Copy custom provider module
-COPY custom_datacite_provider.py /opt/invenio/var/instance/custom_modules/
-
-# Copy configuration loader
-COPY custom_config.py /opt/invenio/var/instance/
-
-# Create __init__.py for the custom modules package
-RUN touch /opt/invenio/var/instance/custom_modules/__init__.py
-
-# Append configuration to invenio.cfg
-RUN echo '' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo '# =============================================' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo '# Custom DOI Format and Landing Page URLs' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo '# =============================================' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo 'import sys' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo 'sys.path.insert(0, "/opt/invenio/var/instance")' >> /opt/invenio/var/instance/invenio.cfg && \
-    echo 'exec(open("/opt/invenio/var/instance/custom_config.py").read())' >> /opt/invenio/var/instance/invenio.cfg
-
-# Set proper ownership
-RUN chown -R 1000:1000 /opt/invenio/var/instance/
-
-USER 1000
-
-EXPOSE 5000
+ENTRYPOINT [ "bash", "-c"]

@@ -1,0 +1,38 @@
+# Keep the built image lean: only ship what the app needs at runtime.
+# The Dockerfile ends with `COPY ./ .`, so anything not listed here lands
+# in the image.
+
+# VCS / CI
+.git
+.gitignore
+.github
+
+# Docs and project meta — not needed at runtime
+README.md
+LICENSE
+.claude
+
+# Local dev tooling
+.venv
+.vscode
+.idea
+docker-compose.yml
+docker-compose.full.yml
+docker-services.yml
+
+# Invenio-CLI machine state
+.invenio.private
+
+# Runtime dirs that should start empty inside the image
+logs
+
+# Python build artifacts
+__pycache__
+*.py[cod]
+*.egg-info
+.eggs
+build
+dist
+
+# Node artifacts (Webpack build runs inside the image)
+node_modules
