@@ -10,8 +10,8 @@ customizations (DOI provider, landing-page URLs, theme tweaks).
 
 - **Custom DataCite landing-page URLs** — separate templates for parent
   (concept) DOIs and version DOIs. App codes are extracted from record
-  metadata identifiers (`SERVE:xxx` format), so a record carrying
-  `SERVE:my-app` resolves to a per-app landing page.
+  metadata identifiers (`scilifelab-serve:xxx` format), so a record carrying
+  `scilifelab-serve:1` resolves to a per-app landing page.
 - **Restricted records** are not published to DataCite (DOIs are hidden on
   update and skipped on register).
 

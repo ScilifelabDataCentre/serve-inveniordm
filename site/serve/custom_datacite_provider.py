@@ -63,8 +63,10 @@ class CustomDataCitePIDProvider(DataCitePIDProvider):
         )
         self.is_parent_provider = is_parent_provider
 
+    APP_CODE_PREFIX = "scilifelab-serve:"
+
     def _extract_app_code(self, record):
-        """Extract app_code from metadata.identifiers (SERVE:xxx format)."""
+        """Extract app_code from metadata.identifiers (scilifelab-serve:xxx format)."""
         if isinstance(record, ChainObject):
             metadata = record._child.get("metadata", {})
         else:
@@ -74,7 +76,7 @@ class CustomDataCitePIDProvider(DataCitePIDProvider):
 
         for identifier in identifiers:
             id_value = identifier.get("identifier", "")
-            if id_value.upper().startswith("SERVE:"):
+            if id_value.lower().startswith(self.APP_CODE_PREFIX):
                 app_code = id_value.split(":", 1)[1]
                 current_app.logger.debug(f"Found app_code: {app_code}")
                 return app_code
