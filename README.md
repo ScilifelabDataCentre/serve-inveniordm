@@ -27,7 +27,7 @@ e.g. `https://serve.scilifelab.se`) when present, otherwise falls back to
 | DOI type | URL shape |
 |---|---|
 | Version | `<base>/records/<id>` |
-| Parent (concept) | `<base>/records/<app_code>` |
+| Parent | `<base>/records/<app_code>` |
 
 `<app_code>` falls back to the record id when the record has no
 `scilifelab-serve:xxx` identifier.
