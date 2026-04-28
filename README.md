@@ -26,10 +26,10 @@ e.g. `https://serve.scilifelab.se`) when present, otherwise falls back to
 
 | DOI type | URL shape |
 |---|---|
-| Version | `<base>/records/<id>` |
-| Parent | `<base>/records/<app_code>` |
+| Version | `<base>/records/<invenio-record-id>` |
+| Parent | `<base>/records/<serve-app-id>` |
 
-`<app_code>` falls back to the record id when the record has no
+`<serve-app-id>` falls back to the record id when the record has no
 `scilifelab-serve:xxx` identifier.
 
 ## Repository layout
